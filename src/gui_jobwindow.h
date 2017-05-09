@@ -111,9 +111,10 @@ public:
 	AnyEntry qsub;
 	SliderEntry min_dedicated;
 	FileNameEntry qsubscript;
-	bool have_extra1, have_extra2;
+	bool have_extra1, have_extra2, have_extra3;
 	AnyEntry qsub_extra1;
 	AnyEntry qsub_extra2;
+	AnyEntry qsub_extra3;
 	AnyEntry other_args;
 
 	// For the run tab

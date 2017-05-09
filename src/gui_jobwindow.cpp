@@ -203,13 +203,13 @@ the job will be executed locally. Note that only MPI jobs may be sent to a queue
 
 	queue_group->begin();
 
-	queuename.place(current_y, "Queue name: ", "openmpi", "Name of the queue to which to submit the job.");
+	queuename.place(current_y, "Queue name: ", "multinode", "Name of the queue to which to submit the job, e.g. norm, multinode, gpu, ccrgpu.");
 
-	qsub.place(current_y, "Queue submit command:", "qsub", "Name of the command used to submit scripts to the queue, e.g. qsub or bsub.\n\n\
-Note that the person who installed RELION should have made a custom script for your cluster/queue setup. Check this is the case \
-(or create your own script following the RELION WIKI) if you have trouble submitting jobs.");
+	qsub.place(current_y, "Queue submit command:", "sbatch",
+"This must be sbatch.  Additional sbatch options can be added, but make sure you know what you're doing.\n\n\
+Note that options given here override those in the template script."); 
 
-	// Two additional options that may be set through environment variables RELION_QSUB_EXTRA1 and RELION_QSUB_EXTRA2 (for more flexibility)
+	// Three additional options that may be set through environment variables RELION_QSUB_EXTRA1, RELION_QSUB_EXTRA2, and RELION_QSUB_EXTRA3 (for more flexibility)
 	char * extra1_text = getenv ("RELION_QSUB_EXTRA1");
 	if (extra1_text != NULL)
 	{
@@ -238,6 +238,19 @@ Any occurrences of XXXextra2XXX will be changed by this value.");
 	else
 		have_extra2 = false;
 
+	char * extra3_text = getenv ("RELION_QSUB_EXTRA3");
+	if (extra3_text != NULL)
+	{
+		have_extra3 = true;
+		char * extra3_default = getenv ("RELION_QSUB_EXTRA3_DEFAULT");
+		char emptychar[] = "";
+		if (extra3_default == NULL)
+			extra3_default=emptychar;
+		qsub_extra3.place(current_y, extra3_text, extra3_default, "Extra option to pass to the qsub template script. \
+Any occurrences of XXXextra3XXX will be changed by this value.");
+	}
+	else
+		have_extra3 = false;
 
 	// Check for environment variable RELION_QSUB_TEMPLATE
 	char * default_location = getenv ("RELION_QSUB_TEMPLATE");
@@ -258,11 +271,11 @@ XXXthreadsXXX = The number of threads; \n \
 XXXcoresXXX = XXXmpinodesXXX * XXXthreadsXXX; \n \
 XXXdedicatedXXX = The minimum number of dedicated cores on each node; \n \
 XXXnodesXXX = The number of requested nodes = CEIL(XXXcoresXXX / XXXdedicatedXXX); \n \
-If these options are not enough for your standard jobs, you may define two extra variables: XXXextra1XXX and XXXextra2XXX \
-Their help text is set by the environment variables RELION_QSUB_EXTRA1 and RELION_QSUB_EXTRA2 \
+If these options are not enough for your standard jobs, you may define two extra variables: XXXextra1XXX, XXXextra2XXX and XXXextra3XXX \
+Their help text is set by the environment variables RELION_QSUB_EXTRA1, RELION_QSUB_EXTRA2 and RELION_QSUB_EXTRA3 \
 For example, setenv RELION_QSUB_EXTRA1 \"Max number of hours in queue\" will result in an additional (text) ein the GUI \
 Any variables XXXextra1XXX in the template script will be replaced by the corresponding value.\
-Likewise, default values for the extra entries can be set through environment variables RELION_QSUB_EXTRA1_DEFAULT and  RELION_QSUB_EXTRA2_DEFAULT. \
+Likewise, default values for the extra entries can be set through environment variables RELION_QSUB_EXTRA1_DEFAULT, RELION_QSUB_EXTRA2_DEFAULT and RELION_QSUB_EXTRA3_DEFAULT. \
 But note that (unlike all other entries in the GUI) the extra values are not remembered from one run to the other.");
 
 	min_dedicated.place(current_y, "Minimum dedicated cores per node:", minimum_nr_dedicated, 1, 64, 1, "Minimum number of dedicated cores that need to be requested on each node. This is useful to force the queue to fill up entire nodes of a given size.");
@@ -354,6 +367,8 @@ void RelionJobWindow::closeWriteFile(std::ofstream& fh, std::string fn)
 		qsub_extra1.writeValue(fh);
 	if (have_extra2)
 		qsub_extra2.writeValue(fh);
+	if (have_extra3)
+		qsub_extra3.writeValue(fh);
 	qsubscript.writeValue(fh);
 	min_dedicated.writeValue(fh);
 	other_args.writeValue(fh);
@@ -377,6 +392,8 @@ void RelionJobWindow::closeReadFile(std::ifstream& fh)
 		qsub_extra1.readValue(fh);
 	if (have_extra2)
 		qsub_extra2.readValue(fh);
+	if (have_extra3)
+		qsub_extra3.readValue(fh);
 	qsubscript.readValue(fh);
 	min_dedicated.readValue(fh);
 	other_args.readValue(fh);
@@ -419,6 +436,8 @@ void RelionJobWindow::saveJobSubmissionScript(std::string newfilename, std::stri
 		replaceStringAll(textbuf, "XXXextra1XXX", qsub_extra1.getValue() );
 	if (have_extra2)
 		replaceStringAll(textbuf, "XXXextra2XXX", qsub_extra2.getValue() );
+	if (have_extra3)
+		replaceStringAll(textbuf, "XXXextra3XXX", qsub_extra3.getValue() );
 
 
 	// First, find out how many mpirun commands there are
